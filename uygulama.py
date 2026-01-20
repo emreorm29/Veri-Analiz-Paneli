@@ -101,3 +101,32 @@ with tab2:
         pdf_yolu = sigorta_pdf_olustur(yas, olasilik, prim)
         with open(pdf_yolu, "rb") as f:
             st.download_button("📄 Sigorta Teklifini Indir", f, file_name="Sigorta_Teklif.pdf")
+    # --- TAB 2 İÇİNE VEYA YENİ BİR SEKME OLARAK EKLEYEBİLİRSİN ---
+st.divider()
+st.subheader("📊 Şirket Geneli Portföy Risk Analizi (Yönetici Özeti)")
+
+if st.button("Tüm Portföyü Analiz Et"):
+    conn = sqlite3.connect('sigorta_guncel.db')
+    df_all = pd.read_sql("SELECT * FROM musteriler", conn)
+    conn.close()
+    
+    # Tüm portföy için olasılıkları tahmin et
+    X_all = df_all[['Yas', 'Ehliyet_Yili', 'Arac_Degeri', 'Sehir_Kodu', 'Arac_Tipi']]
+    tahminler_all = model_sigorta.predict_proba(X_all)[:, 1]
+    
+    # Toplam Beklenen Hasar (Olasılık * Ortalama Hasar Maliyeti)
+    df_all['Beklenen_Hasar'] = tahminler_all * (df_all['Arac_Degeri'] * 0.10)
+    
+    toplam_risk = df_all['Beklenen_Hasar'].sum()
+    ortalama_risk = df_all['Beklenen_Hasar'].mean()
+    en_yuksek_risk = df_all['Beklenen_Hasar'].max()
+    
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Toplam Portföy Riski", f"{toplam_risk:,.2f} TL")
+    m2.metric("Müşteri Başı Ortalama Risk", f"{ortalama_risk:,.2f} TL")
+    m3.metric("En Yüksek Tekil Risk", f"{en_yuksek_risk:,.2f} TL")
+    
+    # Risk Dağılım Grafiği
+    st.write("### Şirketin Maruz Kaldığı Hasar Dağılımı")
+    st.bar_chart(df_all['Beklenen_Hasar'].head(50)) # İlk 50 müşteri örneği
+    st.info("Bu grafik, şirketin kasasından çıkması muhtemel hasarların müşterilere göre dağılımını gösterir.")
