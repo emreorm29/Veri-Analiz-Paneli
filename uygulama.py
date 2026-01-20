@@ -37,3 +37,14 @@ if len(sayisal_sutunlar) > 0:
     st.success(f"Model {hedef_sutun} verisine göre başarıyla eğitildi!")
 else:
     st.error("Dosyada sayısal veri bulunamadı. Lütfen CSV dosyasını kontrol et.")
+# 1. Günlük Getiri ve Volatilite Hesabı
+df['Daily_Return'] = df[hedef_sutun].pct_change()
+volatilite = df['Daily_Return'].std() * (252**0.5) # Yıllıklandırılmış standart sapma
+
+st.subheader("Aktüeryal Risk Analizi")
+st.metric(label="Yıllıklandırılmış Volatilite (Risk Skoru)", value=f"%{volatilite*100:.2f}")
+
+if volatilite > 0.30:
+    st.warning("Bu varlık yüksek risk grubunda! (Yüksek Volatilite)")
+else:
+    st.success("Bu varlık düşük/orta risk grubunda.")
